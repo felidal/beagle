@@ -16,23 +16,22 @@
 
 package br.com.zup.beagle.android.action
 
-import android.view.View
 import br.com.zup.beagle.android.widget.RootView
+import br.com.zup.beagle.android.widget.WidgetView
 import br.com.zup.beagle.core.ServerDrivenComponent
 
 /**
  * Interface that has onInit property
  * @property onInit list of actions performed as soon as the component is rendered
  */
-interface OnInitableComponent {
-    val onInit: List<Action>?
+abstract class OnInitiableComponent : WidgetView() {
 
-    fun executeOnInit(rootView: RootView, listener: OnInitFinishedListener?)
+    abstract val onInit: List<Action>?
 
-    fun addOnInitFinishedListener(listener: OnInitFinishedListener)
+    @Transient
+    internal var onInitFinishedListener: OnInitFinishedListener? = null
+
+    abstract fun executeOnInit(rootView: RootView, listener: OnInitFinishedListener?)
 }
 
-interface OnInitFinishedListener {
-    fun onInitFinished(component: ServerDrivenComponent)
-}
-
+typealias OnInitFinishedListener = (serverState: ServerDrivenComponent) -> Unit

@@ -21,13 +21,12 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import br.com.zup.beagle.android.action.Action
 import br.com.zup.beagle.android.action.OnInitFinishedListener
-import br.com.zup.beagle.android.action.OnInitableComponent
+import br.com.zup.beagle.android.action.OnInitiableComponent
 import br.com.zup.beagle.android.context.Bind
 import br.com.zup.beagle.android.context.ContextComponent
 import br.com.zup.beagle.android.context.ContextData
 import br.com.zup.beagle.android.view.ViewFactory
 import br.com.zup.beagle.android.widget.RootView
-import br.com.zup.beagle.android.widget.WidgetView
 import br.com.zup.beagle.annotation.RegisterWidget
 import br.com.zup.beagle.core.ServerDrivenComponent
 import br.com.zup.beagle.widget.core.ListDirection
@@ -43,7 +42,7 @@ data class ListViewOriginal(
     val onScrollEnd: List<Action>? = null,
     val scrollThreshold: Int? = null,
     val useParentScroll: Boolean = false
-) : WidgetView(), ContextComponent, OnInitableComponent {
+) : OnInitiableComponent(), ContextComponent {
 
     @Transient
     private val viewFactory: ViewFactory = ViewFactory()
@@ -86,9 +85,13 @@ data class ListViewOriginal(
         TODO("Not yet implemented")
     }
 
-    override fun addOnInitFinishedListener(listener: OnInitFinishedListener) {
-        TODO("Not yet implemented")
-    }
+//    override fun executeOnInit(rootView: RootView, listener: OnInitFinishedListener?) {
+//        TODO("Not yet implemented")
+//    }
+//
+//    override fun addOnInitFinishedListener(listener: OnInitFinishedListener) {
+//        TODO("Not yet implemented")
+//    }
 
 }
 

@@ -26,7 +26,7 @@ import androidx.recyclerview.widget.RecyclerView
 import br.com.zup.beagle.android.action.Action
 import br.com.zup.beagle.android.action.OnActionFinished
 import br.com.zup.beagle.android.action.OnInitFinishedListener
-import br.com.zup.beagle.android.action.OnInitableComponent
+import br.com.zup.beagle.android.action.OnInitiableComponent
 import br.com.zup.beagle.android.context.Bind
 import br.com.zup.beagle.android.context.ContextComponent
 import br.com.zup.beagle.android.context.ContextData
@@ -58,8 +58,7 @@ data class ListView(
     val scrollThreshold: Int? = null,
     val useParentScroll: Boolean = false,
     val iteratorName: String = "item"
-
-) : WidgetView(), ContextComponent, OnInitableComponent {
+) : OnInitiableComponent(), ContextComponent {
 
     @Transient
     private val viewFactory: ViewFactory = ViewFactory()
@@ -72,9 +71,6 @@ data class ListView(
 
     @Transient
     private var onInitDone = false
-
-    @Transient
-    private var onInitFinishedListener: OnInitFinishedListener? = null
 
     @Transient
     private lateinit var recyclerView: RecyclerView
@@ -131,19 +127,10 @@ data class ListView(
                     onInitActions?.remove(action)
                     if (onInitActions?.isEmpty() == true) {
                         onInitDone = true
-                        onInitFinishedListener?.onInitFinished(this@ListView)
+                        listener?.invoke(this@ListView)
                     }
                 }
-
             })
-        }
-    }
-
-    override fun addOnInitFinishedListener(listener: OnInitFinishedListener) {
-        onInitFinishedListener = listener
-
-        if (onInitDone) {
-            onInitFinishedListener?.onInitFinished(this)
         }
     }
 
@@ -276,12 +263,11 @@ internal class ListViewContextAdapter2(
                 holder.setIsRecyclable(false)
             }
 
-            (component as OnInitableComponent).addOnInitFinishedListener(object : OnInitFinishedListener {
-                override fun onInitFinished(component: ServerDrivenComponent) {
+            (component as OnInitiableComponent).onInitFinishedListener = object : OnInitFinishedListener {
+                override fun invoke(serverState: ServerDrivenComponent) {
                     resolveComponentFinishedOnInit(component)
                 }
-
-            })
+            }
         }
 
         // adiciona o holder na lista de holders recém criados. Utilizamos essa lista para identificar os holders que
@@ -354,11 +340,10 @@ internal class ListViewContextAdapter2(
                             holder.setIsRecyclable(false)
                         }
 
-                        (component as OnInitableComponent).executeOnInit(rootView, object : OnInitFinishedListener {
-                            override fun onInitFinished(component: ServerDrivenComponent) {
+                        (component as OnInitiableComponent).executeOnInit(rootView, object : OnInitFinishedListener {
+                            override fun invoke(serverState: ServerDrivenComponent) {
                                 resolveComponentFinishedOnInit(component)
                             }
-
                         })
                     }
                 }
@@ -483,7 +468,7 @@ internal class ListViewContextAdapter2(
     }
 
     private fun findInitableComponents(component: ServerDrivenComponent, initableComponentsList: MutableList<ServerDrivenComponent>) {
-        if (component is OnInitableComponent) {
+        if (component is OnInitiableComponent) {
             initableComponentsList.add(component)
         }
 
