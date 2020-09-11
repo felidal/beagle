@@ -55,8 +55,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         Beagle.dependencies = dependencies
         
-        let rootViewController = MainScreen().screenController()
-        window?.rootViewController = rootViewController
+//        let rootViewController = MainScreen().screenController()
+        window?.rootViewController = CustomController()
         
         return true
     }
@@ -71,5 +71,205 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private func registerCustomControllers(in dependencies: BeagleDependencies) {
         dependencies.navigation.registerNavigationController(builder: CustomBeagleNavigationController.init, forId: "CustomBeagleNavigation")
         dependencies.navigation.registerNavigationController(builder: CustomPushStackNavigationController.init, forId: "PushStackNavigation")
+    }
+}
+
+class CustomController: UIViewController {
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .white
+        
+        let wrapper = YogaWrapper(view: YogaSample())
+        view.addSubview(wrapper)
+        
+        let margin = view.layoutMarginsGuide
+        
+        wrapper.translatesAutoresizingMaskIntoConstraints = false
+        wrapper.topAnchor.constraint(equalTo: margin.topAnchor).isActive = true
+        wrapper.leadingAnchor.constraint(equalTo: margin.leadingAnchor).isActive = true
+        wrapper.trailingAnchor.constraint(lessThanOrEqualTo: margin.trailingAnchor).isActive = true
+        
+//        wrapper.widthAnchor.constraint(equalToConstant: 200).isActive = true
+//        wrapper.heightAnchor.constraint(equalToConstant: 200).isActive = true
+        
+        wrapper.bottomAnchor.constraint(lessThanOrEqualTo: margin.bottomAnchor).isActive = true
+    }
+}
+
+// to be used inside a view hierarchy with autolayout
+class YogaWrapper: UIView {
+    let root: UIView
+    var isFirstTime = true
+    
+    init(view: UIView) {
+        self.root = UIView()
+        super.init(frame: .zero)
+        
+        clipsToBounds = true
+        root.yoga.isEnabled = true
+        
+        root.addSubview(view)
+        addSubview(root)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override var intrinsicContentSize: CGSize {
+        let nanSize = CGSize(width: Double.nan, height: .nan)
+        return root.yoga.calculateLayout(with: nanSize)
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        root.frame = bounds
+        root.yoga.applyLayout(preservingOrigin: true)
+    }
+}
+
+class YogaSample: UIView {
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .yellow
+        layer.borderWidth = 1
+        layer.borderColor = UIColor.black.cgColor
+        
+        yoga.isEnabled = true
+        yoga.flexWrap = .wrap
+        yoga.margin = 10
+        yoga.padding = 10
+        
+        let label = UILabel()
+        label.text = "YOGA"
+        label.yoga.isEnabled = true
+        label.yoga.marginBottom = 5
+        addSubview(label)
+        
+        let button = UIButton(type: .system)
+        button.setTitle("ADD", for: .normal)
+        button.yoga.isEnabled = true
+        button.addTarget(self, action: #selector(add), for: .touchUpInside)
+        addSubview(button)
+        
+        let view3 = AutoLayoutWrapper(view: AutoLayoutSample())
+        addSubview(view3)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    @objc func add() {
+        let view = AutoLayoutWrapper(view: AutoLayoutSample())
+        addSubview(view)
+        markDirty()
+    }
+    
+}
+
+// to be used inside a view with yoga
+class AutoLayoutWrapper: UIView {
+    let view: UIView
+    
+    init(view: UIView) {
+        self.view = view
+        super.init(frame: .zero)
+        clipsToBounds = true
+        yoga.isEnabled = true
+        addSubview(view)
+        
+        view.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+        view.topAnchor.constraint(equalTo: topAnchor).isActive = true
+        let botton = view.bottomAnchor.constraint(equalTo: bottomAnchor)
+        botton.priority = .init(rawValue: 999)
+        botton.isActive = true
+        let leading = view.leadingAnchor.constraint(equalTo: leadingAnchor)
+        leading.priority = .init(rawValue: 999)
+        leading.isActive = true
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+        systemLayoutSizeFitting(size)
+    }
+    
+}
+
+class AutoLayoutSample: UIView {
+    let constraintView: UIView
+    let heightConstraint: NSLayoutConstraint
+    
+    override init(frame: CGRect) {
+        let view = UIView()
+        self.constraintView = view
+        self.heightConstraint = view.heightAnchor.constraint(equalToConstant: 100)
+        super.init(frame: frame)
+        
+        backgroundColor = .yellow
+        layer.borderWidth = 1
+        layer.borderColor = UIColor.black.cgColor
+        
+        view.backgroundColor = .cyan
+        addSubview(view)
+        
+        translatesAutoresizingMaskIntoConstraints = false
+    
+        let label = UILabel()
+        label.text = "AUTO"
+        addSubview(label)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 5).isActive = true
+        label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -5).isActive = true
+        label.topAnchor.constraint(equalTo: topAnchor, constant: 5).isActive = true
+        
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 5).isActive = true
+        view.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -5).isActive = true
+        view.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 5).isActive = true
+        view.widthAnchor.constraint(equalToConstant: 50).isActive = true
+        heightConstraint.isActive = true
+        
+        let button = UIButton(type: .system)
+        button.setTitle("shrink", for: .normal)
+        button.addTarget(self, action: #selector(shrink), for: .touchUpInside)
+        addSubview(button)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 5).isActive = true
+        button.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -5).isActive = true
+        button.topAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
+        button.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 20).isActive = true
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    @objc func shrink() {
+        UIView.animate(withDuration: 0.7) {
+            self.heightConstraint.constant = 50
+            self.superview?.markDirty() // we need to call on YogaWrapper
+        }
+        
+    }
+}
+
+extension UIView {
+    func markDirty() {
+        yoga.markDirty()
+        var view: UIView? = self
+        while let currentView = view {
+            if !currentView.yoga.isEnabled {
+                currentView.invalidateIntrinsicContentSize()
+                currentView.setNeedsLayout()
+                currentView.layoutIfNeeded() // maybe we should call in root view
+                break
+            }
+            view = view?.superview
+        }
     }
 }
