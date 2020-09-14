@@ -98,11 +98,14 @@ class CustomController: UIViewController {
 
 // to be used inside a view hierarchy with autolayout
 class YogaWrapper: UIView {
-    let root: UIView
-    var isFirstTime = true
+    let view: UIView
+    
+    private let root: UIView
+    private var alreadyCalculateIntrinsicSize = true
     
     init(view: UIView) {
-        self.root = UIView()
+        root = UIView()
+        self.view = view
         super.init(frame: .zero)
         
         clipsToBounds = true
@@ -117,14 +120,27 @@ class YogaWrapper: UIView {
     }
     
     override var intrinsicContentSize: CGSize {
-        let nanSize = CGSize(width: Double.nan, height: .nan)
-        return root.yoga.calculateLayout(with: nanSize)
+        var size = CGSize(width: Double.nan, height: Double.nan)
+        if !alreadyCalculateIntrinsicSize {
+            alreadyCalculateIntrinsicSize = true
+            switch view.yoga.flexDirection {
+            case .column, .columnReverse:
+                size.height = frame.size.height
+            case .row, .rowReverse:
+                size.width = frame.size.width
+            default:
+                break
+            }
+        }
+        return root.yoga.calculateLayout(with: size)
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
         root.frame = bounds
         root.yoga.applyLayout(preservingOrigin: true)
+        invalidateIntrinsicContentSize() // we need to calculate intrinsecSize a second time
+        alreadyCalculateIntrinsicSize = false
     }
 }
 
@@ -137,6 +153,7 @@ class YogaSample: UIView {
         
         yoga.isEnabled = true
         yoga.flexWrap = .wrap
+        yoga.flexShrink = 1
         yoga.margin = 10
         yoga.padding = 10
         
@@ -163,6 +180,17 @@ class YogaSample: UIView {
     @objc func add() {
         let view = AutoLayoutWrapper(view: AutoLayoutSample())
         addSubview(view)
+        
+//        let view = UIView()
+//        view.backgroundColor = .cyan
+//        view.layer.borderWidth = 1
+//        view.layer.borderColor = UIColor.black.cgColor
+//        view.yoga.isEnabled = true
+//        view.yoga.width = 100
+//        view.yoga.height = 100
+//        view.yoga.flexShrink = 1
+//        addSubview(view)
+        
         markDirty()
     }
     
@@ -253,6 +281,7 @@ class AutoLayoutSample: UIView {
         UIView.animate(withDuration: 0.7) {
             self.heightConstraint.constant = 50
             self.superview?.markDirty() // we need to call on YogaWrapper
+            self.rootLayoutIfNeeded()
         }
         
     }
@@ -266,10 +295,17 @@ extension UIView {
             if !currentView.yoga.isEnabled {
                 currentView.invalidateIntrinsicContentSize()
                 currentView.setNeedsLayout()
-                currentView.layoutIfNeeded() // maybe we should call in root view
                 break
             }
             view = view?.superview
         }
+    }
+    
+    func rootLayoutIfNeeded() { // for animations
+        var view: UIView? = self
+        while view?.superview != nil {
+            view = view?.superview
+        }
+        view?.layoutIfNeeded()
     }
 }
